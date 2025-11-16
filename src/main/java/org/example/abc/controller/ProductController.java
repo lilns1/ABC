@@ -51,4 +51,46 @@ public class ProductController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<Product>> searchProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Float minPrice,
+            @RequestParam(required = false) Float maxPrice,
+            @RequestParam(required = false) Boolean inStock,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // 1. 安全校验：category 转枚举
+        Product.Category cat = null;
+        if (category != null && !category.trim().isEmpty()) {
+            try {
+                cat = Product.Category.valueOf(category.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // 抛出自定义异常，由全局处理器捕获 → 返回 400
+                throw new IllegalArgumentException("无效的商品分类: " + category);
+            }
+        }
+
+        // 2. 价格范围校验（可选增强）
+        if (minPrice != null && minPrice < 0) minPrice = 0f;
+        if (maxPrice != null && maxPrice < 0) maxPrice = null;
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            float temp = minPrice;
+            minPrice = maxPrice;
+            maxPrice = temp;
+        }
+
+        // 3. 分页限制（防刷）
+        size = Math.min(size, 50);
+
+        // 4. 查询
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> products = productRepository.searchProducts(
+                keyword, cat, minPrice, maxPrice, inStock, pageable
+        );
+
+        return ResponseEntity.ok(products);
+    }
 }
