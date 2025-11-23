@@ -24,5 +24,6 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    // Getters & Setters...
+    @Column(nullable = false)
+    private String password;
 }

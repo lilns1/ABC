@@ -13,9 +13,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
 
 server:
-  port: 8888
+  port: 8080
 
 app:
   upload:
