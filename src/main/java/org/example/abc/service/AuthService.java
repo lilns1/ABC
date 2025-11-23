@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class AuthService {
 
@@ -34,5 +36,16 @@ public class AuthService {
         return userRepository.findByEmail(request.getEmail())
                 .map(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
                 .orElse(false);
+    }
+
+    public Optional<Integer> authenticateAndGetUserId(LoginRequest request) {
+        return userRepository.findByEmail(request.getEmail())
+                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
+                .map(User::getId);
+    }
+
+    public Optional<User> authenticateAndGetUser(LoginRequest request) {
+        return userRepository.findByEmail(request.getEmail())
+                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()));
     }
 }
