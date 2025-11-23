@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payment-records")
-@CrossOrigin(origins = "*")
 public class PaymentRecordController {
 
     @Autowired
