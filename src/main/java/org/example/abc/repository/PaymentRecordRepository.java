@@ -14,5 +14,9 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, In
     @EntityGraph(attributePaths = {"user", "product"})
     List<PaymentRecord> findByUserId(Integer userId);
 
+    @EntityGraph(attributePaths = {"user", "product"})
     Optional<PaymentRecord> findByPaymentRef(String paymentRef);
+
+    @EntityGraph(attributePaths = {"user", "product"})
+    Optional<PaymentRecord> findWithUserAndProductById(Integer id);
 }

@@ -27,9 +27,10 @@ public class PaymentRecordController {
 
     // 根据 ID 查询单个支付记录
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentRecord> getPaymentRecordById(@PathVariable Integer id) {
-        Optional<PaymentRecord> record = paymentRecordRepository.findById(id);
-        return record.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<PaymentRecordDto> getPaymentRecordById(@PathVariable Integer id) {
+        Optional<PaymentRecord> record = paymentRecordRepository.findWithUserAndProductById(id);
+        return record.map(r -> ResponseEntity.ok(new PaymentRecordDto(r)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/user/{userId}")

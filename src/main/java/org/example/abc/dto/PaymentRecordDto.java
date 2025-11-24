@@ -8,21 +8,20 @@ import org.example.abc.model.PaymentRecord;
 
 import java.time.LocalDateTime;
 
-@Setter
 @Getter
-
+@Setter
 public class PaymentRecordDto {
 
-    // Getters and Setters
     private Integer id;
     private Integer userId;
+    private String userName;      // 👈 新增
     private Integer productId;
+    private String productName;   // 👈 新增
     private Integer productCount;
     private Float amount;
-    private String paymentStatus; // 使用 String 而不是 enum，便于 JSON 序列化
+    private String paymentStatus;
     private LocalDateTime paymentTime;
     private String paymentRef;
-
 
     public PaymentRecordDto() {}
 
@@ -37,10 +36,16 @@ public class PaymentRecordDto {
         this.paymentTime = record.getPaymentTime();
         this.paymentRef = record.getPaymentRef();
 
-        // 安全地获取关联 ID（避免触发懒加载代理的 deep load）
-        // Hibernate 代理对象即使未初始化，也能通过 getId() 获取主键（因为 ID 已知）
-        this.userId = record.getUser() != null ? record.getUser().getId() : null;
-        this.productId = record.getProduct() != null ? record.getProduct().getId() : null;
-    }
+        // 安全获取 user 信息（因为用了 EntityGraph，user 已被 eager 加载）
+        if (record.getUser() != null) {
+            this.userId = record.getUser().getId();
+            this.userName = record.getUser().getName(); // 假设 User 有 getName()
+        }
 
+        // 安全获取 product 信息（同样已 eager 加载）
+        if (record.getProduct() != null) {
+            this.productId = record.getProduct().getId();
+            this.productName = record.getProduct().getName(); // 假设 Product 有 getName()
+        }
+    }
 }
