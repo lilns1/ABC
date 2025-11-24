@@ -9,11 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "*") // 开发阶段允许跨域
 public class ProductController {
 
     @Autowired
@@ -65,12 +65,11 @@ public class ProductController {
         // 1. 安全校验：category 转枚举
         Product.Category cat = null;
         if (category != null && !category.trim().isEmpty()) {
-            try {
-                cat = Product.Category.valueOf(category.trim().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                // 抛出自定义异常，由全局处理器捕获 → 返回 400
-                throw new IllegalArgumentException("无效的商品分类: " + category);
-            }
+            String catStr = category.trim();
+            cat = Arrays.stream(Product.Category.values())
+                    .filter(c -> c.name().equalsIgnoreCase(catStr))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("无效的商品分类: " + category));
         }
 
         // 2. 价格范围校验（可选增强）

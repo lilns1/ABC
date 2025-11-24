@@ -32,13 +32,9 @@ public class AuthController {
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {
-        if (authService.authenticate(request)) {
-            return ResponseEntity.ok()
-                    .body(new ApiResponse(true, "登录成功"));
-        } else {
-            return ResponseEntity.status(401)
-                    .body(new ApiResponse(false, "邮箱或密码错误"));
-        }
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return authService.authenticateAndGetUser(request)
+                .map(user -> ResponseEntity.ok(new AuthResponse(true, "登录成功", user.getId(), user.getName())))
+                .orElseGet(() -> ResponseEntity.status(401).body(new AuthResponse(false, "邮箱或密码错误", null, null)));
     }
 }

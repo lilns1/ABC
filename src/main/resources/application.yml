@@ -26,3 +26,7 @@ app:
   upload:
     base-dir: /User/lilns/demo/image
     product-image-dir: ${app.upload.base-dir}/product-images
+  cors:
+    allowed-origins:
+      - "http://localhost:5173"
+    allow-credentials: true
