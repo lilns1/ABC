@@ -1,4 +1,3 @@
-// src/main/java/org/example/abc/service/impl/PaymentServiceImpl.java
 package org.example.abc.service.impl;
 
 import org.example.abc.dto.CreatePaymentRequest;
@@ -40,14 +39,23 @@ public class PaymentServiceImpl implements PaymentService {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new PaymentException("商品不存在"));
 
-        // 2. 计算金额（示例：单价 × 数量）
+        // 2. 检查库存是否足够
+        if (product.getStock() < request.getProductCount()) {
+            throw new PaymentException("库存不足");
+        }
+
+        // 3. 扣减库存（预占）
+        product.setStock(product.getStock() - request.getProductCount());
+        productRepository.save(product); // 触发更新
+
+        // 4. 计算金额
         Float amount = product.getPrice() * request.getProductCount();
 
-        // 3. 生成唯一支付流水号（paymentRef）
+        // 5. 生成唯一支付流水号
         String paymentRef = request.getPaymentRef() != null ?
                 request.getPaymentRef() : "PAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        // 4. 创建支付记录（状态为 Pending）
+        // 6. 创建支付记录（状态为 Pending）
         PaymentRecord record = new PaymentRecord();
         record.setUser(user);
         record.setProduct(product);
@@ -57,7 +65,7 @@ public class PaymentServiceImpl implements PaymentService {
         record.setPaymentTime(LocalDateTime.now());
         record.setPaymentRef(paymentRef);
 
-        // 5. 保存到数据库
+        // 7. 保存支付记录
         PaymentRecord saved = paymentRecordRepository.save(record);
         return PaymentResponse.from(saved);
     }
@@ -75,8 +83,8 @@ public class PaymentServiceImpl implements PaymentService {
             throw new PaymentException("支付已退款，无法完成");
         }
 
+        // 只更新状态为 Completed
         record.setPaymentStatus(PaymentRecord.PaymentStatus.Completed);
-        // 注意：paymentTime 不更新（因为 updatable = false）
         PaymentRecord updated = paymentRecordRepository.save(record);
         return PaymentResponse.from(updated);
     }
@@ -90,12 +98,23 @@ public class PaymentServiceImpl implements PaymentService {
         if (record.getPaymentStatus() == PaymentRecord.PaymentStatus.Refunded) {
             throw new PaymentException("已退款");
         }
-        if (record.getPaymentStatus() == PaymentRecord.PaymentStatus.Pending) {
-            throw new PaymentException("未支付，无法退款");
+
+        // 允许 Pending（取消订单）和 Completed（真实退款）都走退款流程
+        if (record.getPaymentStatus() == PaymentRecord.PaymentStatus.Pending ||
+                record.getPaymentStatus() == PaymentRecord.PaymentStatus.Completed) {
+
+            // 恢复库存
+            Product product = record.getProduct();
+            product.setStock(product.getStock() + record.getProductCount());
+            productRepository.save(product);
+
+            // 更新状态为 Refunded
+            record.setPaymentStatus(PaymentRecord.PaymentStatus.Refunded);
+            PaymentRecord updated = paymentRecordRepository.save(record);
+            return PaymentResponse.from(updated);
         }
 
-        record.setPaymentStatus(PaymentRecord.PaymentStatus.Refunded);
-        PaymentRecord updated = paymentRecordRepository.save(record);
-        return PaymentResponse.from(updated);
+        // 理论上不会走到这里，但保留防御性
+        throw new PaymentException("无效的支付状态，无法退款");
     }
 }
